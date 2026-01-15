@@ -21,7 +21,7 @@ echo "Configuring and building Thirdparty/Sophus ..."
 
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-DEIGEN_DONT_ALIGN"
 make -j
 
 cd ../../../
@@ -36,5 +36,5 @@ echo "Configuring and building ORB_SLAM3 ..."
 
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake .. -DCMAKE_BUILD_TYPE=Release -DPangolin_DIR="$(realpath ../../Pangolin/build)"
 make -j4
