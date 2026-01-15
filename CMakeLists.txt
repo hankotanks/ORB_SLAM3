@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.14)
 project(ORB_SLAM3)
 
 IF(NOT CMAKE_BUILD_TYPE)
@@ -135,7 +135,7 @@ if(realsense2_FOUND)
     )
 endif()
 
-
+#[===[
 # Build examples
 
 # RGB-D examples
@@ -388,3 +388,4 @@ if(realsense2_FOUND)
             Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cc)
     target_link_libraries(stereo_inertial_realsense_D435i_old ${PROJECT_NAME})
 endif()
+]===]
