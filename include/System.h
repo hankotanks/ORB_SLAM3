@@ -138,7 +138,10 @@ public:
     // It waits until all threads have finished.
     // This function must be called before saving the trajectory.
     void Shutdown();
+    void ShutdownAndWait();
     bool isShutDown();
+
+    bool GetPose(Sophus::SE3f& pose, const double timestamp) const;
 
     // Save camera trajectory in the TUM RGB-D dataset format.
     // Only for stereo and RGB-D. This method does not work for monocular.
@@ -213,12 +216,12 @@ public:
     //Map* mpMap;
     Atlas* mpAtlas;
 
-private:
     // Tracker. It receives a frame and computes the associated camera pose.
     // It also decides when to insert a new keyframe, create some new MapPoints and
     // performs relocalization if tracking fails.
     Tracking* mpTracker;
 
+private:
     // Local Mapper. It manages the local map and performs local bundle adjustment.
     LocalMapping* mpLocalMapper;
 

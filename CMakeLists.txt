@@ -115,6 +115,21 @@ include/Settings.h)
 
 add_subdirectory(Thirdparty/g2o)
 
+target_compile_options(${PROJECT_NAME} PRIVATE 
+-Wno-reorder 
+-Wno-deprecated-declarations 
+-Wno-unused-variable 
+-Wno-deprecated 
+-Wno-unused-but-set-variable 
+-Wno-maybe-uninitialized 
+-Wno-sign-compare 
+-Wno-overloaded-virtual 
+-Wno-dangling-else 
+-Wno-conversion-null 
+-Wno-unused-local-typedefs 
+-Wno-array-bounds 
+-Wno-uninitialized)
+
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
@@ -137,6 +152,8 @@ endif()
 
 #[===[
 # Build examples
+
+if(FALSE)
 
 # RGB-D examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
@@ -388,4 +405,5 @@ if(realsense2_FOUND)
             Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cc)
     target_link_libraries(stereo_inertial_realsense_D435i_old ${PROJECT_NAME})
 endif()
-]===]
+
+endif()

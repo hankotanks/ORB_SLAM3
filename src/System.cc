@@ -561,9 +561,103 @@ void System::Shutdown()
 
 }
 
+void System::ShutdownAndWait()
+{
+    {
+        unique_lock<mutex> lock(mMutexReset);
+        mbShutDown = true;
+    }
+
+    cout << "Shutdown" << endl;
+
+    mpLocalMapper->RequestFinish();
+    mpLoopCloser->RequestFinish();
+    if(mpViewer)
+    {
+        mpViewer->RequestFinish();
+        while(!mpViewer->isFinished())
+            usleep(5000);
+    }
+
+    // Wait until all thread have effectively stopped
+    while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished() || mpLoopCloser->isRunningGBA())
+    {
+        if(!mpLocalMapper->isFinished())
+            cout << "mpLocalMapper is not finished" << endl;
+        if(!mpLoopCloser->isFinished())
+            cout << "mpLoopCloser is not finished" << endl;
+        if(mpLoopCloser->isRunningGBA()){
+            cout << "mpLoopCloser is running GBA" << endl;
+            cout << "break anyway..." << endl;
+            break;
+        }
+        usleep(5000);
+    }
+
+    if(mpViewer)
+        pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+
+#ifdef REGISTER_TIMES
+    mpTracker->PrintTimeStats();
+#endif
+
+
+}
+
 bool System::isShutDown() {
     unique_lock<mutex> lock(mMutexReset);
     return mbShutDown;
+}
+
+bool System::GetPose(Sophus::SE3f& pose, const double timestamp) const {
+    vector<ORB_SLAM3::KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
+    sort(vpKFs.begin(), vpKFs.end(), ORB_SLAM3::KeyFrame::lId);
+
+    // Transform all keyframes so that the first keyframe is at the origin.
+    // After a loop closure the first keyframe might not be at the origin.
+    Sophus::SE3f Two = vpKFs[0]->GetPoseInverse();
+
+    // Frame pose is stored relative to its reference keyframe (which is optimized by BA and pose graph).
+    // We need to get first the keyframe pose and then concatenate the relative transformation.
+    // Frames not localized (tracking failure) are not saved.
+
+    // For each frame we have a reference keyframe (lRit), the timestamp (lT) and a flag
+    // which is true when tracking failed (lbL).
+    list<Sophus::SE3f>::iterator lit = mpTracker->mlRelativeFramePoses.begin();
+    list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
+    list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+    list<bool>::iterator lbL = mpTracker->mlbLost.begin();
+
+    // Eigen::Vector3f twc = Twc.translation();
+    // Eigen::Quaternionf q = Twc.unit_quaternion();
+    
+    while (lit != mpTracker->mlRelativeFramePoses.end() &&
+        lRit != mpTracker->mlpReferences.end() &&
+        lT != mpTracker->mlFrameTimes.end() &&
+        lbL != mpTracker->mlbLost.end()) {
+
+        if (*lbL) { ++lit; ++lRit; ++lT; ++lbL; continue; }
+
+        // Use a generous timestamp tolerance
+        if (std::abs(*lT - timestamp) > 1e-6) { ++lit; ++lRit; ++lT; ++lbL; continue; }
+
+        ORB_SLAM3::KeyFrame* pKF = *lRit;
+        if (!pKF) { ++lit; ++lRit; ++lT; ++lbL; continue; }
+
+        Sophus::SE3f Trw;
+        while (pKF && pKF->isBad()) {
+            Trw = Trw * pKF->mTcp;
+            pKF = pKF->GetParent();
+        }
+
+        if (!pKF) return false;
+
+        Trw = Trw * pKF->GetPose() * vpKFs[0]->GetPoseInverse();
+        pose = ((*lit) * Trw).inverse();
+
+        return true;
+    }
+    return false;
 }
 
 void System::SaveTrajectoryTUM(const string &filename)
