@@ -16,7 +16,7 @@ cd Thirdparty/DBoW2
 mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+make -j$(nproc)
 
 cd ../../g2o
 
@@ -25,7 +25,7 @@ echo "Configuring and building Thirdparty/g2o ..."
 mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j
+make -j$(nproc)
 
 cd ../../Sophus
 
@@ -34,7 +34,7 @@ echo "Configuring and building Thirdparty/Sophus ..."
 mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-DEIGEN_DONT_ALIGN"
-make -j
+make -j$(nproc)
 
 cd ../../../
 
@@ -49,4 +49,4 @@ echo "Configuring and building ORB_SLAM3 ..."
 mkdir -p build 
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DPangolin_DIR="$(realpath ../Pangolin/build)"
-make -j4
+make -j$(nproc)
