@@ -141,7 +141,7 @@ public:
     void ShutdownAndWait();
     bool isShutDown();
 
-    bool GetPose(Sophus::SE3f& pose, const double timestamp) const;
+    bool GetPose(Sophus::SE3f& pose, const double timestamp, double eps = 1e-3) const;
 
     // Save camera trajectory in the TUM RGB-D dataset format.
     // Only for stereo and RGB-D. This method does not work for monocular.

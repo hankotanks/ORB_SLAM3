@@ -609,7 +609,7 @@ bool System::isShutDown() {
     return mbShutDown;
 }
 
-bool System::GetPose(Sophus::SE3f& pose, const double timestamp) const {
+bool System::GetPose(Sophus::SE3f& pose, const double timestamp, double eps) const {
     vector<ORB_SLAM3::KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
     sort(vpKFs.begin(), vpKFs.end(), ORB_SLAM3::KeyFrame::lId);
 
@@ -630,7 +630,11 @@ bool System::GetPose(Sophus::SE3f& pose, const double timestamp) const {
 
     // Eigen::Vector3f twc = Twc.translation();
     // Eigen::Quaternionf q = Twc.unit_quaternion();
+
+    double best_dt = std::numeric_limits<double>::max();
+    Sophus::SE3f best_pose;
     
+    bool found = false;
     while (lit != mpTracker->mlRelativeFramePoses.end() &&
         lRit != mpTracker->mlpReferences.end() &&
         lT != mpTracker->mlFrameTimes.end() &&
@@ -639,7 +643,9 @@ bool System::GetPose(Sophus::SE3f& pose, const double timestamp) const {
         if (*lbL) { ++lit; ++lRit; ++lT; ++lbL; continue; }
 
         // Use a generous timestamp tolerance
-        if (std::abs(*lT - timestamp) > 1e-6) { ++lit; ++lRit; ++lT; ++lbL; continue; }
+        // if (std::abs(*lT - timestamp) > 1e-6) { ++lit; ++lRit; ++lT; ++lbL; continue; }
+        double dt = std::abs(*lT - timestamp);
+        if(dt > eps || dt > best_dt) { ++lit; ++lRit; ++lT; ++lbL; continue; }
 
         ORB_SLAM3::KeyFrame* pKF = *lRit;
         if (!pKF) { ++lit; ++lRit; ++lT; ++lbL; continue; }
@@ -653,11 +659,13 @@ bool System::GetPose(Sophus::SE3f& pose, const double timestamp) const {
         if (!pKF) return false;
 
         Trw = Trw * pKF->GetPose() * vpKFs[0]->GetPoseInverse();
-        pose = ((*lit) * Trw).inverse();
-
-        return true;
+        best_pose = ((*lit) * Trw).inverse();
+        best_dt = dt;
+        found = true;
+        ++lit; ++lRit; ++lT; ++lbL;
     }
-    return false;
+    if (found) { pose = best_pose; }
+    return found;
 }
 
 void System::SaveTrajectoryTUM(const string &filename)
